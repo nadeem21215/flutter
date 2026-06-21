@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1063762996804",
+    "project_id": "nadeem-7c32e",
+    "storage_bucket": "nadeem-7c32e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063762996804:android:817b85085077b50d139611",
+        "android_client_info": {
+          "package_name": "com.example.smart_institute_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTUoDsvCqtPDwRzgKAr3-QB-xtqzArmWY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
