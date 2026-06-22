@@ -407,16 +407,22 @@ class _AdminInstructorDetailScreenState
               final newName = nameCtrl.text.trim();
               if (newName.isEmpty) return;
               Navigator.pop(ctx);
-              // Note: The backend /instructors endpoint currently only supports
-              // GET. Name editing would require a PUT /instructors/{uid} endpoint.
-              // For now, we update the local display name to reflect the intent.
-              setState(() {
-                _instructor = InstructorModel(
+              try {
+                // Persist the new name on the backend (PUT /instructors/{uid}?name=...)
+                await _api.updateInstructorName(
                   firebaseUid: _instructor.firebaseUid,
                   name: newName,
                 );
-              });
-              showSuccess(context, 'Instructor updated');
+                setState(() {
+                  _instructor = InstructorModel(
+                    firebaseUid: _instructor.firebaseUid,
+                    name: newName,
+                  );
+                });
+                if (mounted) showSuccess(context, 'Instructor updated');
+              } on HttpException catch (e) {
+                if (mounted) showError(context, e.message);
+              }
             },
             style: ElevatedButton.styleFrom(
               shape: RoundedRectangleBorder(
