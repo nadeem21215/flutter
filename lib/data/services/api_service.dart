@@ -379,6 +379,24 @@ class ApiService {
     }
   }
 
+  /// Update an instructor's display name on the backend.
+  /// Backend expects `name` as a QUERY parameter: PUT /instructors/{uid}?name=...
+  Future<void> updateInstructorName({
+    required String firebaseUid,
+    required String name,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConstants.baseUrl}/instructors/$firebaseUid')
+          .replace(queryParameters: {'name': name});
+      final res = await http.put(uri, headers: _headers).timeout(_timeout);
+      _handle(res);
+    } on HttpException {
+      rethrow;
+    } catch (e) {
+      throw HttpException(message: 'Failed to update instructor: $e');
+    }
+  }
+
   /// Fetch all courses assigned to an instructor (doctor_uid).
   Future<Map<String, dynamic>> getInstructorWithCourses(
       {required String firebaseUid}) async {
