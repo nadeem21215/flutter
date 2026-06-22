@@ -53,16 +53,21 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   child: imageBytes == null ? const Icon(Icons.person_rounded, color: AppColors.textGray, size: 28) : null,
                 ),
                 const SizedBox(width: 12),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Text('Hi ${user.name ?? 'Doctor'}!',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
-                            color: AppColors.textDark, fontFamily: 'Poppins')),
-                    const SizedBox(width: 6),
-                    const Text('👋', style: TextStyle(fontSize: 18)),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Flexible(
+                        child: Text('Hi ${user.name ?? 'Doctor'}!',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
+                                color: AppColors.textDark, fontFamily: 'Poppins')),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('👋', style: TextStyle(fontSize: 18)),
+                    ]),
+                    const Text('Instructor', style: TextStyle(color: AppColors.textGray, fontSize: 13, fontFamily: 'Poppins')),
                   ]),
-                  const Text('Instructor', style: TextStyle(color: AppColors.textGray, fontSize: 13, fontFamily: 'Poppins')),
-                ]),
+                ),
               ]),
 
               const SizedBox(height: 16),
@@ -189,13 +194,15 @@ class _DoctorCourseTile extends StatelessWidget {
         Row(children: [
           const Icon(Icons.schedule_rounded, size: 13, color: AppColors.textGray),
           const SizedBox(width: 4),
-          Text('${course.days}  •  ${course.timeRange}',
-              style: const TextStyle(color: AppColors.textGray, fontSize: 12, fontFamily: 'Poppins')),
-          if (course.hall.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Text('@ ${course.hall}',
-                style: const TextStyle(color: AppColors.textGray, fontSize: 12, fontFamily: 'Poppins')),
-          ],
+          Expanded(
+            child: Text(
+              course.hall.isNotEmpty
+                  ? '${course.days}  •  ${course.timeRange}   @ ${course.hall}'
+                  : '${course.days}  •  ${course.timeRange}',
+              style: const TextStyle(color: AppColors.textGray, fontSize: 12, fontFamily: 'Poppins'),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ]),
       ],
     ]),
