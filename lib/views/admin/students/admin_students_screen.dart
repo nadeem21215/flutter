@@ -290,8 +290,25 @@ class _AdminStudentDetailScreenState extends State<AdminStudentDetailScreen>
                         }
                         if (!ctx.mounted) return;
                         Navigator.pop(ctx);
-                        final updated = await _api.getStudentDetail(studentId: _student.id);
-                        setState(() => _student = updated);
+                        // Update the registered list locally so the new courses
+                        // appear immediately. (The backend has no GET /students/{id}
+                        // endpoint, so refetching here used to 404 and silently skip
+                        // the UI refresh — which is why a manual reload was needed.)
+                        setState(() {
+                          _student = StudentModel(
+                            id:          _student.id,
+                            name:        _student.name,
+                            studentCode: _student.studentCode,
+                            level:       _student.level,
+                            gpa:         _student.gpa,
+                            creditHours: _student.creditHours,
+                            warnings:    _student.warnings,
+                            courses: [
+                              ..._student.courses,
+                              ...toAdd.map((c) => c.copyWith(isEnrolled: false)),
+                            ],
+                          );
+                        });
                         showSuccess(context, 'Courses added successfully');
                       } on HttpException catch (e) {
                         showError(context, e.message);
