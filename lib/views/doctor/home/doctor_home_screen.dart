@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/user_images.dart';
 import '../../../core/providers/user_provider.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/api_service.dart';
 import '../../widgets/shared_widgets.dart';
+import '../../doctor/profile/doctor_profile_screen.dart' show DoctorNetworkAvatar;
 import '../assignments/doctor_assignments_screen.dart';
 import '../../student/details/detail_courses_screen.dart';
 
@@ -33,7 +33,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>();
-    final imageBytes = UserImages.getImageBytes(user.firebaseUid);
+    final uid  = user.firebaseUid ?? '';
+    final pictureUrl = uid.isNotEmpty
+        ? ApiService().getProfilePictureUrl(uid)
+        : null;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -46,12 +49,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Header
               Row(children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: AppColors.cardGray,
-                  backgroundImage: imageBytes != null ? MemoryImage(imageBytes) : null,
-                  child: imageBytes == null ? const Icon(Icons.person_rounded, color: AppColors.textGray, size: 28) : null,
-                ),
+                DoctorNetworkAvatar(url: pictureUrl, radius: 26),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
