@@ -370,7 +370,10 @@ class ApiService {
               headers: _headers)
           .timeout(_timeout);
       return (_handle(res) as List)
-          .map((e) => InstructorModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => InstructorModel.fromJson(
+                e as Map<String, dynamic>,
+                baseUrl: AppConstants.baseUrl,
+              ))
           .toList();
     } on HttpException {
       rethrow;
@@ -378,6 +381,33 @@ class ApiService {
       throw HttpException(message: 'Failed to load instructors: $e');
     }
   }
+
+  /// Upload a profile picture for any user (student or doctor).
+  /// Returns the download URL on success.
+  Future<String> uploadProfilePicture({
+    required String firebaseUid,
+    required String filename,
+    required List<int> fileBytes,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConstants.baseUrl}/profile/picture/upload');
+      final req = http.MultipartRequest('POST', uri)
+        ..fields['firebase_uid'] = firebaseUid
+        ..files.add(http.MultipartFile.fromBytes('file', fileBytes,
+            filename: filename));
+      final streamed = await req.send().timeout(_timeout);
+      final res = await http.Response.fromStream(streamed);
+      final data = _handle(res) as Map<String, dynamic>;
+      return '${AppConstants.baseUrl}/profile/picture/download/$firebaseUid';
+    } on HttpException {
+      rethrow;
+    } catch (e) {
+      throw HttpException(message: 'Failed to upload picture: $e');
+    }
+  }
+
+  String getProfilePictureUrl(String firebaseUid) =>
+      '${AppConstants.baseUrl}/profile/picture/download/$firebaseUid';
 
   /// Update an instructor's display name on the backend.
   /// Backend expects `name` as a QUERY parameter: PUT /instructors/{uid}?name=...
