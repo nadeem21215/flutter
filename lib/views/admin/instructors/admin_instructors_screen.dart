@@ -1,9 +1,11 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/network/http_exception.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/api_service.dart';
 import '../../widgets/shared_widgets.dart';
+import '../../doctor/profile/doctor_profile_screen.dart' show DoctorNetworkAvatar;
 
 // ─── Instructor List Screen ───────────────────────────────────────────────────
 class AdminInstructorsScreen extends StatefulWidget {
@@ -113,11 +115,9 @@ class _InstructorRow extends StatelessWidget {
         color: AppColors.cardGray,
         borderRadius: BorderRadius.circular(18)),
     child: Row(children: [
-      CircleAvatar(
+      DoctorNetworkAvatar(
+        url:    instructor.profilePictureUrl,
         radius: 24,
-        backgroundColor: AppColors.accentMedium.withValues(alpha: 0.3),
-        child: const Icon(Icons.person_rounded,
-            color: AppColors.primary, size: 26),
       ),
       const SizedBox(width: 14),
       Expanded(
@@ -158,8 +158,10 @@ class _AdminInstructorDetailScreenState
   late InstructorModel _instructor;
   List<CourseModel> _courses = [];
   bool _loadingCourses = true;
+  bool _uploading = false;
   String? _courseError;
   late TabController _tabs;
+  int _imageVersion = 0;
 
   @override
   void initState() {
@@ -191,6 +193,42 @@ class _AdminInstructorDetailScreenState
         _courseError = 'Failed to load courses';
         _loadingCourses = false;
       });
+    }
+  }
+
+  Future<void> _pickAndUpload() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    setState(() => _uploading = true);
+    try {
+      await _api.uploadProfilePicture(
+        firebaseUid: _instructor.firebaseUid,
+        filename:    file.name,
+        fileBytes:   file.bytes!,
+      );
+      if (!mounted) return;
+      final newUrl = _api.getProfilePictureUrl(_instructor.firebaseUid);
+      setState(() {
+        _imageVersion++;
+        _instructor = _instructor.copyWith(
+          profilePictureUrl: '$newUrl?v=$_imageVersion',
+        );
+      });
+      showSuccess(context, 'Profile picture updated!');
+    } on HttpException catch (e) {
+      if (!mounted) return;
+      showError(context, e.message);
+    } catch (e) {
+      if (!mounted) return;
+      showError(context, 'Upload failed');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -375,15 +413,15 @@ class _AdminInstructorDetailScreenState
   }
 
   Future<void> _showEditDialog() async {
-    final nameCtrl =
-        TextEditingController(text: _instructor.name);
+    final nameCtrl = TextEditingController(text: _instructor.name);
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Edit Instructor',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -408,16 +446,12 @@ class _AdminInstructorDetailScreenState
               if (newName.isEmpty) return;
               Navigator.pop(ctx);
               try {
-                // Persist the new name on the backend (PUT /instructors/{uid}?name=...)
                 await _api.updateInstructorName(
                   firebaseUid: _instructor.firebaseUid,
                   name: newName,
                 );
                 setState(() {
-                  _instructor = InstructorModel(
-                    firebaseUid: _instructor.firebaseUid,
-                    name: newName,
-                  );
+                  _instructor = _instructor.copyWith(name: newName);
                 });
                 if (mounted) showSuccess(context, 'Instructor updated');
               } on HttpException catch (e) {
@@ -454,16 +488,42 @@ class _AdminInstructorDetailScreenState
       ],
     ),
     body: Column(children: [
-      // ── Profile header ──────────────────────────────────────────────────
+      // ── Profile header ────────────────────────────────────────────────
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Column(children: [
           Row(children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.accentMedium.withValues(alpha: 0.3),
-              child: const Icon(Icons.person_rounded,
-                  size: 30, color: AppColors.primary),
+            // Avatar + camera button overlay
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                DoctorNetworkAvatar(
+                  url: _instructor.profilePictureUrl != null
+                      ? '${_instructor.profilePictureUrl}?v=$_imageVersion'
+                      : null,
+                  radius: 32,
+                ),
+                GestureDetector(
+                  onTap: _uploading ? null : _pickAndUpload,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: _uploading
+                        ? const Padding(
+                            padding: EdgeInsets.all(5),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.camera_alt_rounded,
+                            color: Colors.white, size: 13),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -485,7 +545,6 @@ class _AdminInstructorDetailScreenState
             ),
           ]),
           const SizedBox(height: 16),
-          // Stats row
           Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             _StatCol(
                 label: 'Courses',
@@ -494,7 +553,6 @@ class _AdminInstructorDetailScreenState
             _StatCol(label: 'Role', value: 'Doctor'),
           ]),
           const SizedBox(height: 16),
-          // Tab bar
           TabBar(
             controller: _tabs,
             labelColor: AppColors.textDark,
@@ -514,7 +572,7 @@ class _AdminInstructorDetailScreenState
         ]),
       ),
 
-      // ── Tab content ─────────────────────────────────────────────────────
+      // ── Tab content ───────────────────────────────────────────────────
       Expanded(
         child: _loadingCourses
             ? const AppLoading()
@@ -528,7 +586,8 @@ class _AdminInstructorDetailScreenState
                                 color: AppColors.textGray,
                                 fontFamily: 'Poppins')))
                     : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 90),
+                        padding:
+                            const EdgeInsets.fromLTRB(20, 12, 20, 90),
                         itemCount: _courses.length,
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: 10),
