@@ -37,15 +37,33 @@ class UserModel {
 
 // ─── Instructor (for admin instructor picker) ─────────────────────────────────
 class InstructorModel {
-  final String firebaseUid;
-  final String name;
+  final String  firebaseUid;
+  final String  name;
+  final String? profilePictureUrl; // set by ApiService after parsing
 
-  const InstructorModel({required this.firebaseUid, required this.name});
+  const InstructorModel({
+    required this.firebaseUid,
+    required this.name,
+    this.profilePictureUrl,
+  });
 
-  factory InstructorModel.fromJson(Map<String, dynamic> j) => InstructorModel(
-    firebaseUid: (j['firebase_uid'] as String?) ?? '',
-    name:        (j['name']         as String?) ?? '',
-  );
+  factory InstructorModel.fromJson(Map<String, dynamic> j, {String baseUrl = ''}) {
+    final uid = (j['firebase_uid'] as String?) ?? '';
+    return InstructorModel(
+      firebaseUid:       uid,
+      name:              (j['name'] as String?) ?? '',
+      profilePictureUrl: uid.isNotEmpty && baseUrl.isNotEmpty
+          ? '$baseUrl/profile/picture/download/$uid'
+          : null,
+    );
+  }
+
+  InstructorModel copyWith({String? name, String? profilePictureUrl}) =>
+      InstructorModel(
+        firebaseUid:       firebaseUid,
+        name:              name ?? this.name,
+        profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      );
 }
 
 // ─── Course ───────────────────────────────────────────────────────────────────
