@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String baseUrl = "https://web-production-83aec.up.railway.app";
+  static const String baseUrl = "https://gp-production-f8da.up.railway.app";
   static const String roleStudent = "student";
   static const String roleDoctor = "doctor";
   static const String roleAdmin = "admin";
